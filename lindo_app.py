@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer, RTCConfiguration
 import cv2
 import requests
 import base64
@@ -20,7 +20,7 @@ EMAIL_PASSWORD = "ykzlkfyvfzqudxpg"
 
 st.set_page_config(page_title="Lindo Guard Elite", layout="wide", page_icon="🛡️")
 
-# עיצוב CSS
+# עיצוב CSS מתקדם
 st.markdown("""
     <style>
     .stApp { background-color: #F4F7F9; }
@@ -31,6 +31,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# אתחול Session State
 if 'history' not in st.session_state: st.session_state.history = []
 if 'visual_history' not in st.session_state: st.session_state.visual_history = []
 if 'alerts_count' not in st.session_state: st.session_state.alerts_count = 0
@@ -76,8 +77,7 @@ with col_right:
 with col_left:
     st.markdown("### 🎥 שידור חי מהמצלמה")
     
-    # מנוע הווידאו לדפדפן
-   # הגדרות חיבור וידאו מתקדמות לעקיפת חומות אש
+    # הגדרות חיבור וידאו מתקדמות (מופיע פעם אחת בלבד!)
     rtc_config = RTCConfiguration(
         {"iceServers": [
             {"urls": ["stun:stun.l.google.com:19302"]},
@@ -87,16 +87,10 @@ with col_left:
     )
     
     webrtc_ctx = webrtc_streamer(
-        key="lindo-stream",
+        key="lindo-stream-v2",
         rtc_configuration=rtc_config,
         media_stream_constraints={"video": True, "audio": False},
-        async_processing=True, # משפר ביצועים
-    )
-    webrtc_ctx = webrtc_streamer(
-        key="lindo-stream",
-        rtc_configuration=rtc_config,
-        video_processor_factory=None, 
-        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True,
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -109,7 +103,4 @@ with col_left:
 
 # לוגיקת AI (רצה כשוידאו פעיל)
 if webrtc_ctx.state.playing:
-    # הערה: בגרסת Web, הניתוח יתבצע על דגימות מהשידור
     st.toast("המערכת מנתחת את השידור החי...")
-
-
