@@ -13,7 +13,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # --- הגדרות ליבה ---
-API_KEY = "AIzaSyAYIB_naC7SB4Tu90Dpp0gWE6X4Esb-loM"
+API_KEY = "AIzaSyCViOTuoBmPtAcRTT_8zmmQYT-Z4pn6C3U"
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
 EMAIL_SENDER = "adawiavihai@gmail.com"
 EMAIL_RECEIVER = "adawiavihai@gmail.com"
@@ -185,4 +185,5 @@ if st.session_state.cam_on:
                 except: pass
             time.sleep(0.01)
     finally:
+
         cap.release()
