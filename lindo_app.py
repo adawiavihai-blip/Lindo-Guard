@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer, RTCConfiguration, VideoProcessorBase
 import cv2
 import requests
 import base64
@@ -10,6 +10,7 @@ import io
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import numpy as np
 
 # --- הגדרות ליבה ---
 API_KEY = "AIzaSyCViOTuoBmPtAcRTT_8zmmQYT-Z4pn6C3U"
@@ -20,22 +21,11 @@ EMAIL_PASSWORD = "ykzlkfyvfzqudxpg"
 
 st.set_page_config(page_title="Lindo Guard Elite", layout="wide", page_icon="🛡️")
 
-# עיצוב CSS מתקדם
-st.markdown("""
-    <style>
-    .stApp { background-color: #F4F7F9; }
-    .metric-card { background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); text-align: center; border-top: 5px solid #1565C0; }
-    .check-list-container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-    .live-dot { height: 10px; width: 10px; background-color: #ff4b4b; border-radius: 50%; display: inline-block; margin-right: 5px; animation: blink 1s infinite; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-    </style>
-    """, unsafe_allow_html=True)
-
 # אתחול Session State
 if 'history' not in st.session_state: st.session_state.history = []
-if 'visual_history' not in st.session_state: st.session_state.visual_history = []
 if 'alerts_count' not in st.session_state: st.session_state.alerts_count = 0
 if 'health_alerts' not in st.session_state: st.session_state.health_alerts = 0
+if 'last_analysis_time' not in st.session_state: st.session_state.last_analysis_time = 0
 
 def send_email_alert(reason, time_str, category):
     try:
@@ -52,59 +42,65 @@ def send_email_alert(reason, time_str, category):
         server.quit()
     except: pass
 
-# --- דשבורד ראשי ---
-st.markdown(f"<h1>🛡️ LINDO GUARD <span style='font-size: 15px; vertical-align: middle;'><span class='live-dot'></span>WEB STREAMING</span></h1>", unsafe_allow_html=True)
+st.markdown(f"<h1>🛡️ LINDO GUARD <span style='font-size: 15px; color: red;'>● LIVE AI</span></h1>", unsafe_allow_html=True)
 
-c1, c2, c3, c4 = st.columns(4)
+# מדדים
+c1, c2, c3 = st.columns(3)
 with c1: st.metric("🚨 חריגות משמעת", st.session_state.alerts_count)
 with c2: st.metric("🩺 מדדי בריאות", st.session_state.health_alerts)
-with c3: st.metric("⏱️ קצב סריקה", "60 שנ'")
-with c4: st.metric("🛡️ סטטוס", "מחובר")
+with c3: st.metric("📡 סטטוס AI", "סורק...")
 
-st.divider()
-
-col_left, col_right = st.columns([1.6, 1])
+col_left, col_right = st.columns([1.5, 1])
 
 with col_right:
-    st.markdown("### 📸 תיעוד חזותי")
-    gallery_spot = st.empty()
-    st.divider()
-    st.markdown("### 📜 יומן ניתוח חכם")
+    st.markdown("### 📜 יומן אירועים")
     log_spot = st.empty()
     if st.session_state.history:
         log_spot.table(pd.DataFrame(st.session_state.history).head(10))
 
 with col_left:
-    st.markdown("### 🎥 שידור חי מהמצלמה")
+    rtc_config = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}, {"urls": ["stun:global.stun.twilio.com:3478"]}]})
     
-    # הגדרות חיבור משופרות לעקיפת חסימות (STUN Servers)
-    rtc_config = RTCConfiguration(
-        {"iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {"urls": ["stun:stun1.l.google.com:19302"]},
-            {"urls": ["stun:stun2.l.google.com:19302"]},
-            {"urls": ["stun:stun3.l.google.com:19302"]},
-            {"urls": ["stun:stun4.l.google.com:19302"]},
-            {"urls": ["stun:global.stun.twilio.com:3478"]}
-        ]}
-    )
-    
-    # הפעלת המצלמה - מופיע פעם אחת בלבד!
-    webrtc_ctx = webrtc_streamer(
-        key="lindo-guard-v3-final",
+    # פונקציית עיבוד הוידאו
+    class VideoProcessor(VideoProcessorBase):
+        def recv(self, frame):
+            img = frame.to_ndarray(format="bgr24")
+            
+            # בדיקה אם עברה דקה מהניתוח האחרון
+            current_time = time.time()
+            if current_time - st.session_state.last_analysis_time > 60:
+                st.session_state.last_analysis_time = current_time
+                
+                # המרה ל-Base64 ושליחה ל-Gemini
+                _, buffer = cv2.imencode('.jpg', img)
+                img_b64 = base64.b64encode(buffer).decode('utf-8')
+                
+                prompt = "Analyze this dog. Status: ALERT (discipline), HEALTH (limp/pain), or SAFE. Reason in Hebrew."
+                payload = {"contents": [{"parts": [{"text": prompt}, {"inline_data": {"mime_type": "image/jpeg", "data": img_b64}}]}]}
+                
+                try:
+                    res = requests.post(URL, json=payload, headers={'Content-Type': 'application/json'}).json()
+                    text = res['candidates'][0]['content']['parts'][0]['text']
+                    
+                    t_str = datetime.now().strftime("%H:%M")
+                    status = "✅ תקין"
+                    if "ALERT" in text: 
+                        status = "🚨 חריגה"
+                        st.session_state.alerts_count += 1
+                        send_email_alert(text, t_str, status)
+                    elif "HEALTH" in text:
+                        status = "🩺 בריאותי"
+                        st.session_state.health_alerts += 1
+                        send_email_alert(text, t_str, status)
+                    
+                    st.session_state.history.insert(0, {"זמן": t_str, "מצב": status, "פירוט": text})
+                except: pass
+            
+            return frame
+
+    webrtc_streamer(
+        key="lindo-final-ai",
         rtc_configuration=rtc_config,
+        video_processor_factory=VideoProcessor,
         media_stream_constraints={"video": True, "audio": False},
-        async_processing=True,
     )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("""
-    <div class="check-list-container">
-        <h4 style="color: #1565C0; margin-top: 0;">🔍 פרוטוקול בדיקות AI Elite</h4>
-        <p>✅ ניתוח תנועה, משמעת בית, מעקב תזונה וסינון אנושי.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# לוגיקת AI (רצה כשוידאו פעיל)
-if webrtc_ctx.state.playing:
-    st.toast("המערכת מנתחת את השידור החי...")
