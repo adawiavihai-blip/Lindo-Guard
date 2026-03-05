@@ -20,7 +20,7 @@ EMAIL_PASSWORD = "ykzlkfyvfzqudxpg"
 
 st.set_page_config(page_title="Lindo Guard Elite", layout="wide", page_icon="🛡️")
 
-# עיצוב CSS
+# עיצוב CSS מתקדם
 st.markdown("""
     <style>
     .stApp { background-color: #F4F7F9; }
@@ -31,6 +31,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# אתחול Session State
 if 'history' not in st.session_state: st.session_state.history = []
 if 'visual_history' not in st.session_state: st.session_state.visual_history = []
 if 'alerts_count' not in st.session_state: st.session_state.alerts_count = 0
@@ -76,18 +77,21 @@ with col_right:
 with col_left:
     st.markdown("### 🎥 שידור חי מהמצלמה")
     
-    # הגדרות חיבור וידאו מתקדמות לעקיפת חומות אש
+    # הגדרות חיבור משופרות לעקיפת חסימות (STUN Servers)
     rtc_config = RTCConfiguration(
         {"iceServers": [
             {"urls": ["stun:stun.l.google.com:19302"]},
             {"urls": ["stun:stun1.l.google.com:19302"]},
-            {"urls": ["stun:stun2.l.google.com:19302"]}
+            {"urls": ["stun:stun2.l.google.com:19302"]},
+            {"urls": ["stun:stun3.l.google.com:19302"]},
+            {"urls": ["stun:stun4.l.google.com:19302"]},
+            {"urls": ["stun:global.stun.twilio.com:3478"]}
         ]}
     )
     
-    # המצלמה מוגדרת כאן פעם אחת בלבד עם שם ייחודי
+    # הפעלת המצלמה - מופיע פעם אחת בלבד!
     webrtc_ctx = webrtc_streamer(
-        key="lindo-stream-vfinal",
+        key="lindo-guard-v3-final",
         rtc_configuration=rtc_config,
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
