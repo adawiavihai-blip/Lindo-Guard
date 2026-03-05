@@ -20,7 +20,7 @@ EMAIL_PASSWORD = "ykzlkfyvfzqudxpg"
 
 st.set_page_config(page_title="Lindo Guard Elite", layout="wide", page_icon="🛡️")
 
-# עיצוב CSS מתקדם
+# עיצוב CSS
 st.markdown("""
     <style>
     .stApp { background-color: #F4F7F9; }
@@ -31,7 +31,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# אתחול Session State
 if 'history' not in st.session_state: st.session_state.history = []
 if 'visual_history' not in st.session_state: st.session_state.visual_history = []
 if 'alerts_count' not in st.session_state: st.session_state.alerts_count = 0
@@ -77,7 +76,7 @@ with col_right:
 with col_left:
     st.markdown("### 🎥 שידור חי מהמצלמה")
     
-    # הגדרות חיבור וידאו מתקדמות (מופיע פעם אחת בלבד!)
+    # הגדרות חיבור וידאו מתקדמות לעקיפת חומות אש
     rtc_config = RTCConfiguration(
         {"iceServers": [
             {"urls": ["stun:stun.l.google.com:19302"]},
@@ -86,8 +85,9 @@ with col_left:
         ]}
     )
     
+    # המצלמה מוגדרת כאן פעם אחת בלבד עם שם ייחודי
     webrtc_ctx = webrtc_streamer(
-        key="lindo-stream-v2",
+        key="lindo-stream-vfinal",
         rtc_configuration=rtc_config,
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
