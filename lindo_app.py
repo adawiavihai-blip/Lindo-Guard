@@ -77,7 +77,21 @@ with col_left:
     st.markdown("### 🎥 שידור חי מהמצלמה")
     
     # מנוע הווידאו לדפדפן
-    rtc_config = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
+   # הגדרות חיבור וידאו מתקדמות לעקיפת חומות אש
+    rtc_config = RTCConfiguration(
+        {"iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": ["stun:stun1.l.google.com:19302"]},
+            {"urls": ["stun:stun2.l.google.com:19302"]}
+        ]}
+    )
+    
+    webrtc_ctx = webrtc_streamer(
+        key="lindo-stream",
+        rtc_configuration=rtc_config,
+        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True, # משפר ביצועים
+    )
     webrtc_ctx = webrtc_streamer(
         key="lindo-stream",
         rtc_configuration=rtc_config,
@@ -97,4 +111,5 @@ with col_left:
 if webrtc_ctx.state.playing:
     # הערה: בגרסת Web, הניתוח יתבצע על דגימות מהשידור
     st.toast("המערכת מנתחת את השידור החי...")
+
 
